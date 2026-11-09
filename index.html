@@ -27,6 +27,7 @@
       <a href="#pdr" data-i18n="nav.pdr">Co je PDR</a>
       <a href="#services" data-i18n="nav.services">Služby</a>
       <a href="#economy" data-i18n="nav.economy">Ceník &amp; úspora</a>
+      <a href="#calculator" data-i18n="nav.calculator">Kalkulačka</a>
       <a href="#gallery" data-i18n="nav.gallery">Před / Po</a>
       <a href="#game" data-i18n="nav.game">Hra</a>
       <a href="#faq" data-i18n="nav.faq">FAQ</a>
@@ -136,8 +137,8 @@
         <span class="sec-num">02</span>
         <h2 data-i18n="pdr.h2">Co vlastně je PDR? Prostě řečeno</h2>
       </div>
-      <p class="reveal" data-i18n="pdr.p1">PDR znamená <b>Paintless Dent Repair</b> — „oprava důlku bez lakování“. Místo toho, abyste museli vyměnit díl a nanášet nový lak, specialista <b>pomocí speciálních tyčí a háků vytáhne plech zpět do původního tvaru</b> ze zadní strany panelu.</p>
-      <p class="reveal" data-i18n="pdr.p2">Protože se lak vůbec nedotkne, <b>zůstává originální tovární povrch</b>. Žádný rozdíl barvy, žádná demontáž dílů, žádné čekání dny na schnutí laku a vyšší prodejní hodnota vozu.</p>
+      <p class="reveal" data-i18n-html="pdr.p1">PDR znamená <b>Paintless Dent Repair</b> — „oprava důlku bez lakování“. Místo toho, abyste museli vyměnit díl a nanášet nový lak, specialista <b>pomocí speciálních tyčí a háků vytáhne plech zpět do původního tvaru</b> ze zadní strany panelu.</p>
+      <p class="reveal" data-i18n-html="pdr.p2">Protože se lak vůbec nedotkne, <b>zůstává originální tovární povrch</b>. Žádný rozdíl barvy, žádná demontáž dílů, žádné čekání dny na schnutí laku a vyšší prodejní hodnota vozu.</p>
       <div class="steps reveal">
         <div class="step"><span>1</span><div><b data-i18n="pdr.s1t">Diagnostika</b><p data-i18n="pdr.s1d">Posoudíme důlek podle fotky nebo osobně — cena zdarma.</p></div></div>
         <div class="step"><span>2</span><div><b data-i18n="pdr.s2t">Vytažení</b><p data-i18n="pdr.s2d">Precizními nástroji vrácíme plechu původní tvar.</p></div></div>
@@ -188,11 +189,87 @@
   </div>
 </section>
 
+<!-- ============ PRICE CALCULATOR ============ -->
+<section class="section" id="calculator">
+  <div class="wrap">
+    <div class="sec-head center reveal">
+      <span class="sec-num">04</span>
+      <h2 data-i18n="calc.h2">Vypočítejte si cenu online</h2>
+      <p data-i18n="calc.sub">Vyplňte parametry poškození a okamžitě uvidíte orientační cenu. Přesnou cenu potvrdíme podle fotky — zdarma.</p>
+    </div>
+    <div class="calc-grid reveal">
+      <form class="calc-form" id="calcForm" onsubmit="return false;">
+        <fieldset>
+          <legend data-i18n="calc.g1">Parametry důlku</legend>
+          <div class="field">
+            <label for="cSize" data-i18n="calc.size">Velikost důlku (průměr) *</label>
+            <select id="cSize" name="size">
+              <option value="20" selected>do 20 mm</option>
+              <option value="30">do 30 mm</option>
+              <option value="40">do 40 mm</option>
+              <option value="60">do 60 mm</option>
+              <option value="80">do 80 mm</option>
+              <option value="100">do 100 mm</option>
+              <option value="130">do 130 mm</option>
+              <option value="160">do 160 mm</option>
+              <option value="190">do 190 mm</option>
+              <option value="220">do 220 mm</option>
+              <option value="250">do 250 mm</option>
+              <option value="280">do 280 mm</option>
+              <option value="310">do 310 mm</option>
+              <option value="big" data-i18n="calc.size_big">větší / individuálně</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="cCount" data-i18n="calc.count">Počet důlků *</label>
+            <input type="number" id="cCount" name="count" min="1" max="400" step="1" value="1" required>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend data-i18n="calc.g2">Umístění a materiál</legend>
+          <div class="field">
+            <label for="cZone" data-i18n="calc.zone">Zóna karoserie *</label>
+            <select id="cZone" name="zone">
+              <option value="hood" selected data-i18n="calc.z_hood">Kapota / střecha</option>
+              <option value="door" data-i18n="calc.z_door">Blatník / dveře</option>
+              <option value="trunk" data-i18n="calc.z_trunk">Boční rám / kufr</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="cMat" data-i18n="calc.mat">Materiál panelu</label>
+            <select id="cMat" name="mat">
+              <option value="steel" selected data-i18n="calc.m_steel">Ocel</option>
+              <option value="alu" data-i18n="calc.m_alu">Hliník (+50 %)</option>
+            </select>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend data-i18n="calc.g3">Komplexita</legend>
+          <label class="check"><input type="checkbox" id="cBodyline"> <span data-i18n="calc.bodyline">Na tělesné linii (+30 %)</span></label>
+          <label class="check"><input type="checkbox" id="cEdge"> <span data-i18n="calc.edge">U okraje panelu (+30 %)</span></label>
+          <label class="check"><input type="checkbox" id="cGlue"> <span data-i18n="calc.glue">Potřebuje lepicí tah (+30 %)</span></label>
+        </fieldset>
+      </form>
+      <aside class="calc-result" id="calcResult">
+        <p class="cr-label" data-i18n="calc.res_label">Orientační cena opravy PDR</p>
+        <output class="cr-value" id="calcTotal">—</output>
+        <div class="cr-break">
+          <div><span data-i18n="calc.br_base">Báze PDR</span><b id="calcBase">—</b></div>
+          <div><span data-i18n="calc.br_ri">Přepočet na počet</span><b id="calcPerDent">—</b></div>
+          <div><span data-i18n="calc.br_mult">Příplatky</span><b id="calcMult">×1,00</b></div>
+        </div>
+        <p class="cr-note" data-i18n="calc.note">Cena je orientační dle ceníku vytahovanidulku.cz. Finální cenu potvrdíme po posouzení fotky — bez závazků.</p>
+        <button class="btn btn-primary btn-block" id="calcToQuote" data-i18n="calc.cta">Přenést do poptávky →</button>
+      </aside>
+    </div>
+  </div>
+</section>
+
 <!-- ============ BEFORE / AFTER GALLERY ============ -->
 <section class="section section-alt" id="gallery">
   <div class="wrap">
     <div class="sec-head center reveal">
-      <span class="sec-num">04</span>
+      <span class="sec-num">05</span>
       <h2 data-i18n="gal.h2">Před a po — posunout kurzorem</h2>
       <p data-i18n="gal.sub">Chytnete lišta a táhnete. Skutečné práce, skutečná auta.</p>
     </div>
@@ -204,9 +281,9 @@
 <section class="section game-section" id="game">
   <div class="wrap game-wrap">
     <div class="game-head reveal">
-      <span class="sec-num">05</span>
+      <span class="sec-num">06</span>
       <h2 data-i18n="game.h2">Mini-hra: Vytáhni všechny důlky!</h2>
-      <p data-i18n="game.sub">Klikni na důlky a vytáhni je z kapoty co nejrychleji. Za výsledek získáš <b>slevový kód</b>, který použiješ ve formuláři níže.</p>
+      <p data-i18n-html="game.sub">Klikni na důlky a vytáhni je z kapoty co nejrychleji. Za výsledek získáš <b>slevový kód</b>, který použiješ ve formuláři níže.</p>
     </div>
     <div class="game-box reveal">
       <div class="game-hud">
@@ -230,7 +307,7 @@
 <section class="section" id="reviews">
   <div class="wrap">
     <div class="sec-head center reveal">
-      <span class="sec-num">06</span>
+      <span class="sec-num">07</span>
       <h2 data-i18n="rev.h2">Co říkají klienti</h2>
     </div>
     <div class="rev-grid">
@@ -257,7 +334,7 @@
 <section class="section section-alt" id="faq">
   <div class="wrap narrow">
     <div class="sec-head reveal">
-      <span class="sec-num">07</span>
+      <span class="sec-num">08</span>
       <h2 data-i18n="faq.h2">Časté dotazy</h2>
     </div>
     <div class="faq" id="faqList">
@@ -274,7 +351,7 @@
 <section class="section quote-section" id="quote">
   <div class="wrap quote-wrap">
     <div class="quote-info reveal">
-      <span class="sec-num light">08</span>
+      <span class="sec-num light">09</span>
       <h2 data-i18n="form.h2">Získejte nezávaznou cenovou nabídku</h2>
       <p data-i18n="form.lead">Vyplňte pár políček a my se ozveme s přesnou cenou. Posouzení poškození je zdarma.</p>
       <ul class="contact-list">
@@ -350,6 +427,7 @@
         <h4 data-i18n="footer.nav">Navigace</h4>
         <a href="#pdr" data-i18n="nav.pdr">Co je PDR</a>
         <a href="#services" data-i18n="nav.services">Služby</a>
+        <a href="#calculator" data-i18n="nav.calculator">Kalkulačka</a>
         <a href="#gallery" data-i18n="nav.gallery">Před / Po</a>
         <a href="#game" data-i18n="nav.game">Hra</a>
       </div>
