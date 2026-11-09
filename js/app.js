@@ -58,6 +58,7 @@
     // re-render dynamic bits that depend on language
     renderBeforeAfter();
     if (typeof updatePricePreview === "function") updatePricePreview();
+    if (typeof renderCalc === "function") renderCalc();
   }
 
   document.querySelectorAll(".lang-btn").forEach(function (b) {
@@ -381,6 +382,162 @@
   }
 
   /* ============================================================
+     4b. PRICE CALCULATOR
+     Pricing source: official price list of vytahovanidulku.cz
+     (cenik page): hail matrix by zone x size x dent count,
+     plus the single-dent PDR table for larger dents.
+     Calculation model adapted from joteo.net PDR calculator
+     (open static implementation).
+     ============================================================ */
+  // Single-dent PDR table (CZK), by max diameter mm
+  var PDR_SIZES = {20:2500,30:2916,40:3198,60:3373,80:3668,100:4044,130:4688,160:5248,190:5738,220:6301,250:6932,280:7500,310:8156};
+  // Hail matrix: total price for the whole count band, per zone & size
+  // zones: hood (kapota/střecha), door (blatník/dveře), trunk (boční rám/kufr)
+  // sizes: [20mm, 30mm, 40mm]
+  var HAIL_ROWS = [
+    {n:[1,1],    p:{hood:[764,826,892],   door:[867,936,1011],   trunk:[1019,1100,1188]}},
+    {n:[2,4],    p:{hood:[1376,1487,1606],door:[1558,1681,1816], trunk:[1833,1980,2139]}},
+    {n:[5,8],    p:{hood:[2062,2228,2407],door:[2339,2526,2717], trunk:[2751,2971,3208]}},
+    {n:[9,13],   p:{hood:[3032,3274,3538],door:[3436,3711,4008], trunk:[4044,4368,4368]}},
+    {n:[14,19],  p:{hood:[3456,3732,4031],door:[3918,4231,4569], trunk:[4609,4979,5378]}},
+    {n:[20,26],  p:{hood:[3906,4218,4554],door:[4427,4781,5164], trunk:[5207,5622,6072]}},
+    {n:[27,34],  p:{hood:[4640,5011,5412],door:[4826,5212,5629], trunk:[6187,6681,7216]}},
+    {n:[35,43],  p:{hood:[5199,5614,6064],door:[5260,5681,6136], trunk:[6929,7484,8052]}},
+    {n:[44,53],  p:{hood:[5820,6050,6788],door:[5891,6361,6871], trunk:[7761,8382,9053]}},
+    {n:[54,64],  p:{hood:[6986,7544,8148],door:[6599,7127,7698], trunk:[9313,10059,10864]}},
+    {n:[65,80],  p:{hood:[8382,9053,9778],door:[7918,8191,9234], trunk:[11176,12071,13036]}},
+    {n:[81,100], p:{hood:[9776,10559,11404],door:[9501,10260,11081],trunk:[12849,13878,14988]}},
+    {n:[101,120],p:{hood:[10680,11534,12458],door:[10986,11864,12813],trunk:[14100,15228,16447]}},
+    {n:[121,140],p:{hood:[11098,11986,12944],door:[12032,12994,14034],trunk:[14759,15940,17214]}},
+    {n:[141,160],p:{hood:[12318,13302,14367],door:[13939,15053,16258],trunk:[16381,17692,19108]}},
+    {n:[161,180],p:{hood:[12756,13776,14879],door:[15720,16978,18336],trunk:[16879,18229,19688]}},
+    {n:[181,200],p:{hood:[13473,14551,15714],door:[16879,18229,19688],trunk:[17874,19300,20924]}},
+    {n:[201,240],p:{hood:[16184,17462,19079],door:[18868,20286,23501],trunk:[21481,23176,25400]}},
+    {n:[241,260],p:{hood:[17118,18466,20238],door:[19926,21421,24812],trunk:[22722,24508,26940]}},
+    {n:[261,280],p:{hood:[17847,19249,21141],door:[20751,22308,25838],trunk:[23692,25551,28142]}},
+    {n:[281,300],p:{hood:[18573,20031,22044],door:[21574,23193,26860],trunk:[24659,26589,29344]}},
+    {n:[301,320],p:{hood:[19044,20536,22628],door:[22109,23767,27522],trunk:[25286,27262,30121]}},
+    {n:[321,340],p:{hood:[19262,20771,22899],door:[22356,24032,27828],trunk:[25574,27573,30480]}},
+    {n:[341,360],p:{hood:[19899,21454,23689],door:[23078,24808,28724],trunk:[26422,28484,31532]}},
+    {n:[361,380],p:{hood:[20128,21700,23973],door:[23336,25086,29046],trunk:[26727,28811,31909]}},
+    {n:[381,400],p:{hood:[20502,22102,24438],door:[23760,25541,29572],trunk:[27224,29347,32528]}}
+  ];
+  // zone ratios for large dents (derived from the matrix: door ≈ ×1.13, trunk ≈ ×1.33 vs hood)
+  var ZONE_RATIO = {hood:1.0, door:1.13, trunk:1.33};
+
+  function readCalcInputs() {
+    var sizeSel = document.getElementById("cSize");
+    var countEl = document.getElementById("cCount");
+    var zoneSel = document.getElementById("cZone");
+    var matSel  = document.getElementById("cMat");
+    if (!sizeSel || !countEl) return null;
+    var count = parseInt(countEl.value, 10);
+    if (isNaN(count) || count < 1) count = 1;
+    if (count > 400) count = 400;
+    return {
+      size: sizeSel.value,
+      count: count,
+      zone: zoneSel.value || "hood",
+      alu: matSel.value === "alu",
+      bodyline: document.getElementById("cBodyline").checked,
+      edge: document.getElementById("cEdge").checked,
+      glue: document.getElementById("cGlue").checked
+    };
+  }
+
+  function computeCalc(inp) {
+    var mult = 1;
+    if (inp.bodyline) mult *= 1.3;
+    if (inp.edge) mult *= 1.3;
+    if (inp.glue) mult *= 1.3;
+    var matMult = inp.alu ? 1.5 : 1;
+
+    var sizeMm = inp.size === "big" ? null : parseInt(inp.size, 10);
+    var baseTotal, perDent, individual = false;
+
+    if (sizeMm === null) {
+      individual = true; // bigger than 310 mm — individual quote
+    } else if (sizeMm <= 40 && inp.count >= 1) {
+      // small dents: exact official hail matrix (total for the count band)
+      var si = sizeMm === 20 ? 0 : sizeMm === 30 ? 1 : 2;
+      var row = null;
+      for (var i = 0; i < HAIL_ROWS.length; i++) {
+        if (inp.count >= HAIL_ROWS[i].n[0] && inp.count <= HAIL_ROWS[i].n[1]) { row = HAIL_ROWS[i]; break; }
+      }
+      if (!row) row = HAIL_ROWS[HAIL_ROWS.length - 1];
+      baseTotal = row.p[inp.zone][si];
+      perDent = Math.round(baseTotal / inp.count);
+    } else {
+      // single/large dents: official single-dent table, scaled by zone & count
+      var unit = PDR_SIZES[sizeMm] || PDR_SIZES[310];
+      var zf = ZONE_RATIO[inp.zone] || 1;
+      perDent = Math.round(unit * zf);
+      baseTotal = perDent * inp.count;
+    }
+
+    var hasSurcharges = matMult * mult !== 1;
+    var total = individual ? 0 : (hasSurcharges ? Math.round(baseTotal * matMult * mult / 10) * 10 : baseTotal);
+    return { baseTotal: baseTotal, perDent: perDent, total: total,
+             surcharge: matMult * mult, individual: individual };
+  }
+
+  function renderCalc() {
+    var inp = readCalcInputs();
+    if (!inp) return;
+    var r = computeCalc(inp);
+    var d = window.I18N[curLang] || window.I18N.cs;
+    var elTotal = document.getElementById("calcTotal");
+    var elBase  = document.getElementById("calcBase");
+    var elPer   = document.getElementById("calcPerDent");
+    var elMult  = document.getElementById("calcMult");
+    if (r.individual) {
+      elTotal.textContent = d["calc.size_big"];
+      elBase.textContent = "—"; elPer.textContent = "—";
+      elMult.textContent = "×" + r.surcharge.toFixed(2);
+    } else {
+      elTotal.textContent = fmtKc(r.total);
+      elBase.textContent = fmtKc(r.baseTotal);
+      elPer.textContent = fmtKc(r.perDent);
+      elMult.textContent = "×" + r.surcharge.toFixed(2);
+    }
+    window._lastCalc = { inp: inp, res: r };
+  }
+
+  function initCalculator() {
+    var form = document.getElementById("calcForm");
+    if (!form) return;
+    ["input","change"].forEach(function (ev) {
+      form.addEventListener(ev, renderCalc);
+    });
+    renderCalc();
+
+    var btn = document.getElementById("calcToQuote");
+    if (btn) btn.addEventListener("click", function () {
+      var lc = window._lastCalc;
+      if (!lc) return;
+      var d = window.I18N[curLang] || window.I18N.cs;
+      var inp = lc.inp, r = lc.res;
+      var sizeLabel = document.getElementById("cSize").selectedOptions[0].textContent;
+      var zoneLabel = document.getElementById("cZone").selectedOptions[0].textContent;
+      var extras = [];
+      if (inp.alu) extras.push(d["calc.m_alu"]);
+      if (inp.bodyline) extras.push(d["calc.bodyline"]);
+      if (inp.edge) extras.push(d["calc.edge"]);
+      if (inp.glue) extras.push(d["calc.glue"]);
+      var line = d["calc.h2"] + ": " + inp.count + "× " + sizeLabel + ", " + zoneLabel
+               + (extras.length ? " (" + extras.join(", ") + ")" : "")
+               + " — " + (r.individual ? d["calc.size_big"] : fmtKc(r.total));
+      var desc = document.getElementById("fDesc");
+      desc.value = line + (desc.value ? "\n" + desc.value : "");
+      var typeSel = document.getElementById("fType");
+      if (typeSel) {
+        typeSel.value = (inp.count > 1 && inp.size !== "big" && parseInt(inp.size,10) <= 40) ? "kroupa" : "park";
+      }
+      document.getElementById("quote").scrollIntoView({behavior:"smooth"});
+    });
+  }
+
+  /* ============================================================
      5. Scroll reveal + back-to-top
      ============================================================ */
   function initReveal() {
@@ -412,6 +569,7 @@
     applyLang(detectLang());
     initGame();
     initForm();
+    initCalculator();
     initReveal();
     initToTop();
   });
